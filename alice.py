@@ -2,11 +2,36 @@ import random
 import socket
 import struct
 
-N = 50 # number of bits
+QUBIT_COUNT = 50 # number of bits
+
+def compare_bases(x_a, y_a, y_b):
+    """
+    Alice and Bob compare bases over classical channel.
+    They keep only the bits where their bases matched.
+    """
+    print("Step 2: Basis Reconciliation")
+    print("-" * 50)
+    print("Alice and Bob compare their bases...")
+
+    matching_indices = []
+    sifted_key_alice = []
+
+    print(f'Alice\'s bases:\t{y_a}')
+    print(f'Bob\'s bases:\t{y_b}')
+
+    for i in range(QUBIT_COUNT):
+        if y_a[i] == y_b[i]:  # Bases match
+            matching_indices.append(i)
+            sifted_key_alice.append(x_a[i])
+
+    print(f"✓ Bases matched for {len(matching_indices)}/{QUBIT_COUNT} qubits")
+    print(f"✓ Sifted key length: {len(sifted_key_alice)} bits\n")
+
+    return matching_indices, sifted_key_alice
 
 def main():
-    x= [random.randint(0, 1) for _ in range(N)]
-    y= [random.randint(0, 1) for _ in range(N)]
+    x= [random.randint(0, 1) for _ in range(QUBIT_COUNT)]
+    y= [random.randint(0, 1) for _ in range(QUBIT_COUNT)]
 
     qserver = socket.create_connection(('localhost', 5001))
     for (bit, qbit) in zip(x, y):
@@ -23,7 +48,7 @@ def main():
     conn, address = client_socket.accept()
 
     bob_bases = []
-    for _ in range(N):
+    for _ in range(QUBIT_COUNT):
         result = conn.recv(4)
         result = struct.unpack('!I', result)[0]
         bob_bases.append(result)
@@ -33,6 +58,9 @@ def main():
 
     print("Alice's bases:\t", y)
     print("Bob's bases:\t", bob_bases)
+
+    matching, sifted_key_alice = compare_bases(x, y, bob_bases)
+    print(f'Alice\'s key:\t{sifted_key_alice}')
 
     conn.close()
     client_socket.close()
