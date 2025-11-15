@@ -115,8 +115,9 @@ def main():
     print(f'Bob sample:\t{bob_sample}')
 
     qber = error_estimation(bob_sample, alice_sample, sample_size)
-
-
+    if qber:
+        print("Potential interference detected. Aborted key generation.")
+        return
     key = get_rem_key(sample_indices, sifted_key_bob)
     print(f'Key: {key}')
 

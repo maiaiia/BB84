@@ -16,7 +16,7 @@ PORT_ALICE = 5001  # Port for Alice's connection
 PORT_BOB = 5002  # Port for Bob's connection
 N = 100  # Message length (number of qubits)
 
-EVE = False
+EVE = True
 
 # Simulator
 simulator = AerSimulator()
@@ -78,7 +78,7 @@ def handle_qubit_transmission(qubit_number, x_a, y_a, y_b):
     qc = transform(x_a, y_a)
 
     # Eve intercepts with 25% probability if enabled
-    if EVE and random.random() < 0.25:
+    if EVE:
         # Eve measures in Breidbart basis
         qc_eve = qc.copy()
         qc_eve.ry(-np.pi / 4, 0)  # Rotate to Breidbart basis
