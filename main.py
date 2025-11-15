@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import random
 import time
 
-QUBIT_COUNT = 100
+QUBIT_COUNT = 50
 # ------------------
 
 # Alice's bits and bases, Bob's bases, Bob's received bits
@@ -158,6 +158,9 @@ def compare_bases():
     sifted_key_alice = []
     sifted_key_bob = []
 
+    print(f'Alice\'s bases:\t{y_a}')
+    print(f'Bob\'s bases:\t{y_b}')
+
     for i in range(QUBIT_COUNT):
         if y_a[i] == y_b[i]:  # Bases match
             matching_indices.append(i)
@@ -174,7 +177,7 @@ def error_estimation(sifted_key_alice, sifted_key_bob, sample_size=None):
     """
     Estimate the quantum bit error rate (QBER) by comparing a sample.
     """
-    if sample_size is None:
+    if sample_size is None: # select a sample size of around 25% of the bits (but send at most 20 bits)
         sample_size = min(len(sifted_key_alice) // 4, 20)
 
     print("Step 3: Error Estimation")
@@ -186,6 +189,7 @@ def error_estimation(sifted_key_alice, sifted_key_bob, sample_size=None):
 
     # Random sample for error checking
     sample_indices = random.sample(range(len(sifted_key_alice)), sample_size)
+    # in theory, these should also be sent via the regular channel
 
     errors = 0
     for idx in sample_indices:
@@ -206,25 +210,6 @@ def error_estimation(sifted_key_alice, sifted_key_bob, sample_size=None):
     print(f"✓ Final key length: {len(remaining_alice)} bits\n")
 
     return remaining_alice, remaining_bob, qber
-
-
-def verify_keys(key_alice, key_bob):
-    """Verify that Alice and Bob have the same key."""
-    print("Step 4: Key Verification")
-    print("-" * 50)
-
-    if key_alice == key_bob:
-        print("✓ SUCCESS: Keys match perfectly!")
-        agreement = 100.0
-    else:
-        matches = sum(1 for a, b in zip(key_alice, key_bob) if a == b)
-        agreement = (matches / len(key_alice)) * 100
-        print(f"⚠ Keys have {agreement:.2f}% agreement")
-
-    print(f"Final key length: {len(key_alice)} bits")
-    print(f"Key agreement: {agreement:.2f}%\n")
-
-    return agreement
 
 
 def display_summary(final_key_alice, final_key_bob, qber):
@@ -259,12 +244,14 @@ def main():
         sifted_key_alice, sifted_key_bob
     )
 
-    # Step 4: Verification
-    agreement = verify_keys(final_key_alice, final_key_bob)
-
     # Summary
     display_summary(final_key_alice, final_key_bob, qber)
 
 
 if __name__ == "__main__":
     main()
+
+
+# TODO - eve
+# TODO - separate
+# TODO - if error is too big, announce that the key is corrupted
