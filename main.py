@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import random
 import time
 
-QUBIT_COUNT = 50
+QUBIT_COUNT = 100
 # ------------------
 
 # Alice's bits and bases, Bob's bases, Bob's received bits

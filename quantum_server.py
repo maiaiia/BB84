@@ -4,7 +4,7 @@ This server receives qubits from Alice and measurements from Bob,
 performs quantum operations, and returns results.
 """
 
-import socket, struct
+import socket, struct, random, time, numpy as np
 import json
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit_aer import AerSimulator
@@ -14,7 +14,9 @@ from qiskit import transpile
 HOST = 'localhost'
 PORT_ALICE = 5001  # Port for Alice's connection
 PORT_BOB = 5002  # Port for Bob's connection
-N = 50  # Message length (number of qubits)
+N = 100  # Message length (number of qubits)
+
+EVE = False
 
 # Simulator
 simulator = AerSimulator()
@@ -74,6 +76,35 @@ def handle_qubit_transmission(qubit_number, x_a, y_a, y_b):
 
     # Alice prepares the qubit
     qc = transform(x_a, y_a)
+
+    # Eve intercepts with 25% probability if enabled
+    if EVE and random.random() < 0.25:
+        # Eve measures in Breidbart basis
+        qc_eve = qc.copy()
+        qc_eve.ry(-np.pi / 4, 0)  # Rotate to Breidbart basis
+        qc_eve.measure(0, 0)
+
+        # Execute Eve's measurement
+        compiled_circuit = transpile(qc_eve, simulator)
+        job = simulator.run(compiled_circuit, shots=1)
+        result = job.result()
+        counts = result.get_counts(compiled_circuit)
+        eve_result = int(list(counts.keys())[0])
+
+        # Eve re-prepares based on her measurement
+        from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
+        qr = QuantumRegister(1)
+        cr = ClassicalRegister(1)
+        qc = QuantumCircuit(qr, cr)
+
+        if eve_result == 0:
+            # Prepare |α0⟩ = cos(π/8)|0⟩ + sin(π/8)|1⟩
+            qc.ry(np.pi / 4, 0)
+        else:
+            # Prepare |α1⟩ = -sin(π/8)|0⟩ + cos(π/8)|1⟩
+            qc.ry(3 * np.pi / 4, 0)
+            qc.z(0)
+
 
     # Bob measures in his basis
     measured_bit = measure(qc, y_b)

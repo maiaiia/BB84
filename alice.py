@@ -2,7 +2,7 @@ import random
 import socket
 import struct
 
-QUBIT_COUNT = 50 # number of bits
+QUBIT_COUNT = 100 # number of bits
 
 def compare_bases(x_a, y_a, y_b):
     """
@@ -129,8 +129,10 @@ def main():
 
     qber = estimate_error(alice_sample, bobs_sample, sample_size)
 
+
+
     key = get_rem_key(sample_indices, sifted_key_alice)
-    print(key)
+    print(f'Key: {key}')
 
 
 
