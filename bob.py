@@ -29,6 +29,47 @@ def compare_bases(x_b, y_b, y_a):
 
     return matching_indices, sifted_key_bob
 
+def receive_sample_data(alice: socket.socket):
+    sample_size = alice.recv(4)
+    sample_size = struct.unpack('!I', sample_size)[0]
+    sample_indices = []
+    for _ in range(sample_size):
+        alice_bit = alice.recv(4)
+        alice_bit = struct.unpack('!I', alice_bit)[0]
+        sample_indices.append(alice_bit)
+    return sample_size, sample_indices
+
+def receive_sample_from_alice(alice: socket.socket, sample_size):
+    alice_sample = []
+    for _ in range(sample_size):
+        a = alice.recv(4)
+        a = struct.unpack('!I', a)[0]
+        alice_sample.append(a)
+    return alice_sample
+
+def send_sample_to_alice(alice: socket.socket, bob_sample):
+    for i in bob_sample:
+        alice.send(struct.pack('!I', i))
+
+
+def get_rem_key(sample_indices, key):
+    fin_key = [key[i] for i in sample_indices]
+    return fin_key
+
+def error_estimation(sifted_key_alice, sifted_key_bob, sample_size=None):
+    errors = 0
+    for idx in range(sample_size):
+        if sifted_key_alice[idx] != sifted_key_bob[idx]:
+            errors += 1
+
+    qber = (errors / sample_size) * 100
+    print(f"Sample size: {sample_size} bits")
+    print(f"Errors detected: {errors}")
+    print(f"QBER: {qber:.2f}%")
+
+    return qber
+
+
 def main():
     y = [random.randint(0, 1) for _ in range(QUBIT_COUNT)]
     x = []
@@ -40,18 +81,17 @@ def main():
         x_i = struct.unpack("!I", x_i)[0]
         x.append(x_i)
 
-
     qserver.close()
 
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(('localhost', 4567))
+    alice_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    alice_socket.connect(('localhost', 4567))
 
     for qbit in y:
-        client_socket.sendall(struct.pack("!I", qbit ))
+        alice_socket.sendall(struct.pack("!I", qbit ))
 
     alice_bases = []
     for _ in range(QUBIT_COUNT):
-        result = client_socket.recv(4)
+        result = alice_socket.recv(4)
         result = struct.unpack('!I', result)[0]
         alice_bases.append(result)
 
@@ -61,6 +101,24 @@ def main():
     matching_indices, sifted_key_bob = compare_bases(x, y, alice_bases)
     print(f'Bob\'s key:\t{sifted_key_bob}')
 
-    client_socket.close()
+    sample_size, sample_indices = receive_sample_data(alice_socket)
+    print(sample_indices)
+
+    bob_sample = []
+    for i in sample_indices:
+        bob_sample.append(sifted_key_bob[i])
+
+    alice_sample = receive_sample_from_alice(alice_socket, sample_size)
+    send_sample_to_alice(alice_socket, bob_sample)
+
+    print(alice_sample)
+
+    qber = error_estimation(bob_sample, alice_sample, sample_size)
+
+    key = get_rem_key(sample_indices, sifted_key_bob)
+    print(key)
+
+    alice_socket.close()
+
 if __name__ == "__main__":
     main()

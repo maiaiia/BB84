@@ -29,6 +29,60 @@ def compare_bases(x_a, y_a, y_b):
 
     return matching_indices, sifted_key_alice
 
+def request_bit_sample(sifted_key, bob_socket: socket.socket):
+    sample_size = min(len(sifted_key) // 4, 20)
+    sample_indices = random.sample(range(len(sifted_key)), sample_size)
+
+    bob_socket.send(struct.pack('!I', sample_size))
+    for i in sample_indices:
+        bob_socket.send(struct.pack('!I', i))
+
+    return sample_size, sample_indices
+
+def send_sample_to_bob(bob: socket.socket, sample):
+    for i in sample:
+        bob.send(struct.pack('!I', i))
+
+def receive_bob_sample(bob_socket: socket.socket, sample_size):
+    bob_sample = []
+    for _ in range(sample_size):
+        b = bob_socket.recv(4)
+        b = struct.unpack('!I', b)[0]
+        bob_sample.append(b)
+    return bob_sample
+
+def error_estimation(sifted_key_alice, sifted_key_bob, sample_size=None):
+
+    errors = 0
+    for idx in range(sample_size):
+        if sifted_key_alice[idx] != sifted_key_bob[idx]:
+            errors += 1
+
+    qber = (errors / sample_size) * 100
+    print(f"Sample size: {sample_size} bits")
+    print(f"Errors detected: {errors}")
+    print(f"QBER: {qber:.2f}%")
+
+    return qber
+
+def get_rem_key(sample_indices, key):
+    fin_key = [key[i] for i in sample_indices]
+    return fin_key
+
+
+def estimate_error(alice_sample, bob_sample, sample_size):
+    errors = 0
+    for i in range(sample_size):
+        if alice_sample[i] != bob_sample[i]:
+            errors += 1
+    qber = (errors / sample_size) * 100
+
+    print(f"Sample size: {sample_size} bits")
+    print(f"Errors detected: {errors}")
+    print(f"QBER: {qber:.2f}%")
+
+    return qber
+
 def main():
     x= [random.randint(0, 1) for _ in range(QUBIT_COUNT)]
     y= [random.randint(0, 1) for _ in range(QUBIT_COUNT)]
@@ -61,6 +115,21 @@ def main():
 
     matching, sifted_key_alice = compare_bases(x, y, bob_bases)
     print(f'Alice\'s key:\t{sifted_key_alice}')
+
+    sample_size, sample_indices = request_bit_sample(sifted_key_alice, conn)
+    alice_sample = []
+    for i in sample_indices:
+        alice_sample.append(sifted_key_alice[i])
+
+    send_sample_to_bob(conn, alice_sample)
+    bobs_sample = receive_bob_sample(conn, sample_size)
+
+    print(bobs_sample)
+
+    qber = estimate_error(alice_sample, bobs_sample, sample_size)
+
+    key = get_rem_key(sample_indices, sifted_key_alice)
+    print(key)
 
     conn.close()
     client_socket.close()
