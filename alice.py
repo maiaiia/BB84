@@ -8,12 +8,12 @@ def main():
     x= [random.randint(0, 1) for _ in range(N)]
     y= [random.randint(0, 1) for _ in range(N)]
 
-    # qserver = socket.create_connection(('localhost', 5001))
-    # for (bit, qbit) in zip(x, y):
-    #     qserver.sendall(struct.pack("!I",bit ))
-    #     qserver.sendall(struct.pack("!I",qbit ))
-    #
-    # qserver.close()
+    qserver = socket.create_connection(('localhost', 5001))
+    for (bit, qbit) in zip(x, y):
+         qserver.sendall(struct.pack("!I",bit ))
+         qserver.sendall(struct.pack("!I",qbit ))
+
+    qserver.close()
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -31,8 +31,8 @@ def main():
     for qbit in y:
         conn.sendall(struct.pack("!I", qbit ))
 
-    print("Alice's bases: ", y)
-    print("Bob's bases: ", bob_bases)
+    print("Alice's bases:\t", y)
+    print("Bob's bases:\t", bob_bases)
 
     conn.close()
     client_socket.close()
