@@ -102,16 +102,17 @@ def main():
     print(f'Bob\'s key:\t{sifted_key_bob}')
 
     sample_size, sample_indices = receive_sample_data(alice_socket)
-    print(sample_indices)
 
     bob_sample = []
     for i in sample_indices:
         bob_sample.append(sifted_key_bob[i])
 
+
     alice_sample = receive_sample_from_alice(alice_socket, sample_size)
     send_sample_to_alice(alice_socket, bob_sample)
 
-    print(alice_sample)
+    print(f'Alice sample:\t{alice_sample}')
+    print(f'Bob sample:\t{bob_sample}')
 
     qber = error_estimation(bob_sample, alice_sample, sample_size)
 

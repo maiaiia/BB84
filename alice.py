@@ -124,12 +124,15 @@ def main():
     send_sample_to_bob(conn, alice_sample)
     bobs_sample = receive_bob_sample(conn, sample_size)
 
-    print(bobs_sample)
+    print(f'Alice sample:\t{alice_sample}')
+    print(f'Bob sample:\t{bobs_sample}')
 
     qber = estimate_error(alice_sample, bobs_sample, sample_size)
 
     key = get_rem_key(sample_indices, sifted_key_alice)
     print(key)
+
+
 
     conn.close()
     client_socket.close()
